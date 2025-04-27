@@ -4,6 +4,7 @@ mri testing utils
 import numpy as np
 import scipy.io as sio
 import utils
+import opt_algs
 
 def test_sense():
     data = sio.loadmat('/Users/alex/Documents/School/Research/Dwork/dataConsistency/MB_data.mat')
@@ -137,8 +138,29 @@ def test_sense():
     gxr = gxr.reshape(-1, 1)
     test8 = np.linalg.norm(gxr - data['gxr'])
 
+def test_simplex():
+    """
+    test the problem from wikipedia
+    minimize Z = -2x - 3y - 4z
+    st
+    3x + 2y + z <= 10
+    2x + 5y + 3z <= 15
+    x,y,z >= 0
+    """
+
+    c = [3,5,0,0]
+    A = [[1,0,1,0], [0,1,0,1]]
+    b = [4, 2]
+    # c = [2, 3, 4]
+    # A = np.array([[3, 2, 1], [2, 5, 3]])
+    # b = [10, 15]
+    x, z = opt_algs.simplex(c, A ,b)
+    print(f"optimal solution of {x}")
+    print(f"optimal value {z}")
+
 def main():
-    test_sense()
+    test_simplex()
+    # test_sense()
     return 0
 
 if __name__ == "__main__":

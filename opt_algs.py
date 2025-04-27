@@ -1,5 +1,76 @@
 import numpy as np
 
+def simplex(c, A, b):
+    """
+    i want to code up the simplex method for linear programming
+
+    maximize c^Tx st Ax <= b, x >= 0
+    """
+
+    # Convert inputs to NumPy arrays
+    c = np.array(c, dtype=float)
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    
+    m, n = A.shape  # m constraints, n variables
+    if len(b) != m or len(c) != n:
+        raise ValueError("Dimension mismatch in inputs.")
+    
+    # Initialize basis: assume last m variables are basic (slack variables)
+    basis = list(range(n - m, n))
+    non_basis = list(range(n - m))
+    
+    # Main Simplex loop
+    while True:
+        # Step 1: Compute basic solution
+        B = A[:, basis]  # Basic columns
+        try:
+            B_inv = np.linalg.inv(B)
+        except np.linalg.LinAlgError:
+            raise ValueError("Degenerate or infeasible problem.")
+        
+        x_b = B_inv @ b  # Basic variable values
+        if np.any(x_b < 0):
+            raise ValueError("Infeasible solution encountered.")
+        
+        x = np.zeros(n)
+        for i, idx in enumerate(basis):
+            x[idx] = x_b[i]
+        
+        # Step 2: Compute reduced costs
+        c_b = c[basis]  # Objective coefficients for basic variables
+        pi = c_b @ B_inv  # Dual variables
+        reduced_costs = c - pi @ A  # Reduced costs for all variables
+        
+        # Step 3: Check optimality
+        if np.all(reduced_costs[non_basis] <= 0):
+            # Optimal solution found
+            z = c @ x
+            return x, z
+        
+        # Step 4: Select entering variable
+        entering = non_basis[np.argmax(reduced_costs[non_basis])]
+        if reduced_costs[entering] <= 0:
+            raise ValueError("Problem is unbounded.")
+        
+        # Step 5: Compute pivot direction
+        y = B_inv @ A[:, entering]
+        if np.all(y <= 0):
+            raise ValueError("Problem is unbounded.")
+        
+        # Step 6: Minimum ratio test to select leaving variable
+        ratios = np.array([x_b[i] / y[i] if y[i] > 0 else np.inf for i in range(m)])
+        leaving_idx = np.argmin(ratios)
+        if ratios[leaving_idx] == np.inf:
+            raise ValueError("Problem is unbounded.")
+        
+        # Step 7: Update basis
+        leaving = basis[leaving_idx]
+        basis[leaving_idx] = entering
+        non_basis.remove(entering)
+        non_basis.append(leaving)
+        non_basis.sort()
+
 def fista(x0, gradf, proxg, maxIter=100, objFun = None):
     """
     implementation of FISTA
